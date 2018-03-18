@@ -9,16 +9,25 @@ use Illuminate\Http\Request;
 class ListsController extends Controller{
 
 //create a new list list url:create
-	public function createList(Request $request){
+	public function createList(Request $request,$userDetails=""){
+		 
+		if(is_array($userDetails) && array_key_exists('userid', $userDetails)){
+
+			$list = $userDetails['list'];
+			$role = $userDetails['role'];
+			$user = $userDetails['user_id'];
+
+		}else{
+		 
 		 $this->validate($request, [
 	       'list' => 'required',
 	       'role' => 'required',
 	       'user_id'=>'required'
         ]);
-
 		 $list = $request->input('list');
 		 $role = $request->input('role');
 		 $user = $request->input('user_id');
+		}
 		DB::table('lists')->insert(['list_name' => $list, 'role' => $role, 'user_id' => $user]);
 		return response()->json(['status' => 'success'],200);
 	}
@@ -83,14 +92,28 @@ class ListsController extends Controller{
 	}
 
 
+	public function addUserToGroup(Request $request){
+
+		
+		$listid = $request->input('listid');
+		$userid = $request->input('userid');
+		$user = $request->input('user');
+
+		if($this->checkAccess($userid,$listid)){
+
+			$this->createList()
+		}
+
+
+	}
+
+
 	public function showGroupList(){
 
 			$this->validate($request, ['user']);
 		$user = $request->input('user');
 		$lists = DB::table('lists')->where([['user_id',$user],['role','<','10']])->get();
 		return response()->json(['lists' => $lists],200);
-
-
 	}
 
 
@@ -101,10 +124,8 @@ class ListsController extends Controller{
 		$listid = $request->input('listid');
 		$itemid = $request->input('itemid');
 		
-		if($this->checkAccess($user,$listid,$itemid)){
-			
+		if($this->checkAccess($user,$listid,$itemid)){		
 			DB::table('lists_data')->where('id', '=', $itemid)->delete();
-
 		}
 	}
 	
